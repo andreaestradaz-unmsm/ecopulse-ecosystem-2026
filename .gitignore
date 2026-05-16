@@ -1,3 +1,8 @@
 *.db
 venv/
 __pycache__/
+
+# Godot-specific ignores
+simulation_godot/.godot/
+simulation_godot/*.tmp
+simulation_godot/export_presets.cfg

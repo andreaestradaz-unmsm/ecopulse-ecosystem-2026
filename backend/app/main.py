@@ -5,6 +5,18 @@ from sqlalchemy.orm import Session
 from app import models, schemas, auth
 from app.database import engine, get_db
 
+from fastapi.middleware.cors import CORSMiddleware
+
+app = FastAPI()
+
+# Configuración de CORS para permitir que tu simulación en Godot consulte la API
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Permite conexiones desde cualquier origen local/externo
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -81,3 +93,32 @@ def iniciar_sesion(form_data: OAuth2PasswordRequestForm = Depends(), db: Session
     token_acceso = auth.crear_token_acceso(datos={"sub": usuario.username})
 
     return {"access_token": token_acceso, "token_type": "bearer"}
+
+@app.get("/app/datos_ambientales")
+def obtener_datos_ambientales(db: Session = Depends(get_db)):
+    """
+    Endpoint dedicado para conectar con el Gemelo Digital en Godot.
+    Extrae la última emisión registrada en la base de datos para simularla en tiempo real.
+    """
+    from app import models  # Asegurar la importación del modelo de datos
+    
+    # Buscamos la última emisión guardada en la base de datos por los sensores
+    ultima_emision = db.query(models.Emission).order_spec(models.Emission.id.desc()).first()
+    
+    if ultima_emision:
+        # Mapeamos el valor para que sea un flotante adecuado para la niebla de Godot
+        # Por ejemplo, si el PM2.5 es 50, lo escalamos a un rango visible (ej. 0.15)
+        # Aquí una regla de tres simple o un mapeo directo según sus datos:
+        nivel_fog = min(float(ultima_emision.pm25) / 100.0, 0.5) 
+        
+        return {
+            "status": "success",
+            "pm25": nivel_fog,
+            "valor_real": ultima_emision.pm25
+        }
+    
+    # Si la base de datos está vacía, enviamos un valor por defecto (día limpio)
+    return {
+        "status": "no_data",
+        "pm25": 0.01
+    }
