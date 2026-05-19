@@ -1,0 +1,25 @@
+# --- Bases de datos ---
+*.db
+*.sqlite3
+
+# --- Entornos virtuales ---
+venv/
+.venv/
+env/
+
+# --- Caché de Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- Configuraciones locales de IDE ---
+.vscode/
+
+# --- Móvil (Flutter - Requisito Lab 8.1) ---
+.dart_tool/
+build/
+
+# --- Godot-specific ignores ---
+simulation_godot/.godot/
+simulation_godot/*.tmp
+simulation_godot/export_presets.cfg
