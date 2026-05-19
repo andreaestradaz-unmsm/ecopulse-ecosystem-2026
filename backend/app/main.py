@@ -1,7 +1,11 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
+<<<<<<< HEAD
 from . import database
+=======
+
+>>>>>>> 5d2883b9b4dcd1d044cdaefa73b0e3110cafdf8e
 from app import models, schemas, auth
 from app.database import engine, get_db
 
@@ -103,6 +107,7 @@ def obtener_emisiones(limite: int = 100, db: Session = Depends(get_db), current_
 
 # --- GODOT (Pública) ---
 @app.get("/app/datos_ambientales")
+<<<<<<< HEAD
 async def obtener_datos(db: Session = Depends(database.get_db)):
     # 1. Buscamos la última emisión y cargamos la información de la estación vinculada
     # Usamos models.Emission porque así está en tu captura
@@ -124,3 +129,12 @@ async def obtener_datos(db: Session = Depends(database.get_db)):
 
     #Arreglar error con @app.get("/app/datos_ambientales"),no devuelve absolutamente nada, ni siquiera un error, solo una respuesta vacía. Esto se debe a que la función no está retornando ningún valor. Para solucionarlo, debes asegurarte de que la función retorne un diccionario con los datos que deseas enviar al cliente. Por ejemplo:
     #lo he intentado cambiar pero nada alv sigue devolviendo solo el dato principal no el co2 ni el nox  
+=======
+def obtener_datos_ambientales(db: Session = Depends(get_db)):
+    from app import models 
+    ultima_emision = db.query(models.Emission).order_by(models.Emission.id.desc()).first()
+    if ultima_emision:
+        nivel_fog = min(float(ultima_emision.pm25) / 100.0, 0.5) 
+        return {"status": "success", "pm25": nivel_fog, "valor_real": ultima_emision.pm25}
+    return {"status": "no_data", "pm25": 0.01}
+>>>>>>> 5d2883b9b4dcd1d044cdaefa73b0e3110cafdf8e

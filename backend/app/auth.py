@@ -40,4 +40,8 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
             raise credentials_exception
     except JWTError:
         raise credentials_exception
+<<<<<<< HEAD
     return username
+=======
+    return username
+>>>>>>> 5d2883b9b4dcd1d044cdaefa73b0e3110cafdf8e
