@@ -99,7 +99,7 @@ def obtener_emisiones(limite: int = 100, db: Session = Depends(get_db), current_
     return db.query(models.Emission).limit(limite).all()
 
 @app.get("/app/datos_ambientales")
-def obtener_datos_ambientales(db: Session = Depends(get_db)):
+def obtener_datos_ambientales(db: Session = Depends(get_db), current_user: str = Depends(auth.get_current_user)):
     from app import models
     ultima_emision = db.query(models.Emission).order_by(models.Emission.id.desc()).first()
     

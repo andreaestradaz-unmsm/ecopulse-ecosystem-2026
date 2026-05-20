@@ -24,7 +24,18 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() { _isLoading = true; });
     try {
       final url = Uri.parse("${ApiConfig.baseUrl}/app/datos_ambientales");
-      final response = await http.get(url).timeout(const Duration(seconds: 4));
+      if (ApiConfig.token == null) {
+        setState(() {
+          _statusMessage = "Debes iniciar sesión primero";
+          _ambientData = null;
+          _isLoading = false;
+        });
+        return;
+      }
+      final response = await http.get(
+        url,
+        headers: {'Authorization': 'Bearer ${ApiConfig.token}'},
+      ).timeout(const Duration(seconds: 4));
       if (response.statusCode == 200) {
         setState(() {
           _ambientData = jsonDecode(response.body);
@@ -33,7 +44,12 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       } else {
         setState(() {
-          _statusMessage = "Error del servidor: ${response.statusCode}";
+          if (response.statusCode == 401) {
+            _statusMessage = "Sesión expirada. Inicia sesión.";
+            _ambientData = null;
+          } else {
+            _statusMessage = "Error del servidor: ${response.statusCode}";
+          }
           _isLoading = false;
         });
       }
