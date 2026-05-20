@@ -79,6 +79,8 @@ def eliminar_estacion(station_id: int, db: Session = Depends(get_db), current_us
     estacion_db = db.query(models.Station).filter(models.Station.id == station_id).first()
     if not estacion_db:
         raise HTTPException(status_code=404, detail="Estación no encontrada")
+    
+    db.query(models.Emission).filter(models.Emission.station_id == station_id).delete()
     db.delete(estacion_db)
     db.commit()
     return {"mensaje": "Estación eliminada correctamente"}

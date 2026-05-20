@@ -7,7 +7,7 @@ class MainTabController extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('EcoPulse'),
@@ -15,6 +15,7 @@ class MainTabController extends StatelessWidget {
           bottom: const TabBar(
             tabs: [
               Tab(icon: Icon(Icons.dashboard), text: "Monitoreo"),
+              Tab(icon: Icon(Icons.list_alt), text: "Gestión"),
               Tab(icon: Icon(Icons.settings), text: "Config"),
             ],
           ),
@@ -22,6 +23,7 @@ class MainTabController extends StatelessWidget {
         body: const TabBarView(
           children: [
             HomeScreen(),
+            ManagementScreen(),
             SettingsScreen(),
           ],
         ),
