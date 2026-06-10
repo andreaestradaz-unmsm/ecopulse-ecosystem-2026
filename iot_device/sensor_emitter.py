@@ -11,7 +11,6 @@ USUARIO = "admin"
 PASSWORD = "admin"
 
 def obtener_token():
-    """Autentica al dispositivo IoT en el Backend y obtiene el token JWT"""
     try:
         respuesta = requests.post(TOKEN_URL, data={"username": USUARIO, "password": PASSWORD})
         if respuesta.status_code == 200:
