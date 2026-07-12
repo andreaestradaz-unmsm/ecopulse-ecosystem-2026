@@ -1,0 +1,58 @@
+[gd_scene format=3 uid="uid://c8gnum7a3vk0u"]
+
+[ext_resource type="Script" uid="uid://xi1ndvuhns7f" path="res://scripts/main_city.gd" id="1_8e6h3"]
+[ext_resource type="Environment" uid="uid://c0aw7kvh4jwam" path="res://environment/industrial_atm.tres" id="2_fyeu2"]
+[ext_resource type="Script" uid="uid://emlq0yq5l7os" path="res://scripts/visualizacion_satelital.gd" id="3_bbb7m"]
+[ext_resource type="Texture2D" uid="uid://b1htt21tydxoc" path="res://nube_icono.png" id="4_bbb7m"]
+[ext_resource type="Texture2D" uid="uid://dvdm63500kund" path="res://mapa_estaciones.png" id="4_ewt6p"]
+
+[node name="MainCity" type="Node3D" unique_id=1718505054]
+script = ExtResource("1_8e6h3")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1957545713]
+environment = ExtResource("2_fyeu2")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=819450395]
+transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545, -0.50000006, 0.75, -0.43301266, 0, 0, 0)
+shadow_enabled = true
+
+[node name="HTTPRequest" type="HTTPRequest" parent="." unique_id=1377356169]
+
+[node name="VisualizacionSatelital" type="Node2D" parent="." unique_id=1832615833]
+position = Vector2(11, -4)
+script = ExtResource("3_bbb7m")
+
+[node name="MapaSatelital" type="Sprite2D" parent="VisualizacionSatelital" unique_id=1109869916]
+position = Vector2(575.99994, 336)
+scale = Vector2(0.99320877, 0.97209984)
+texture = ExtResource("4_ewt6p")
+
+[node name="NubeSanBorja" type="Sprite2D" parent="VisualizacionSatelital" unique_id=31209497]
+position = Vector2(756, 439)
+scale = Vector2(0.085, 0.085)
+texture = ExtResource("4_bbb7m")
+
+[node name="NubeSantaAnita" type="Sprite2D" parent="VisualizacionSatelital" unique_id=1625206827]
+position = Vector2(806, 170.00006)
+scale = Vector2(0.085, 0.085)
+texture = ExtResource("4_bbb7m")
+
+[node name="NubeSanJuandeLurigancho" type="Sprite2D" parent="VisualizacionSatelital" unique_id=2055191775]
+position = Vector2(761, 65.00006)
+scale = Vector2(0.085, 0.085)
+texture = ExtResource("4_bbb7m")
+
+[node name="NubeSanMartin" type="Sprite2D" parent="VisualizacionSatelital" unique_id=171428246]
+position = Vector2(400.00003, 187)
+scale = Vector2(0.085, 0.085)
+texture = ExtResource("4_bbb7m")
+
+[node name="NubePariachi" type="Sprite2D" parent="VisualizacionSatelital" unique_id=1919404013]
+position = Vector2(844, 232.00003)
+scale = Vector2(0.085, 0.085)
+texture = ExtResource("4_bbb7m")
+
+[node name="NubeCampoDeMarte" type="Sprite2D" parent="VisualizacionSatelital" unique_id=1370750381]
+position = Vector2(498.00003, 457)
+scale = Vector2(0.085, 0.085)
+texture = ExtResource("4_bbb7m")
