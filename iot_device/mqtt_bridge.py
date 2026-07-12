@@ -125,7 +125,7 @@ def on_message(client, userdata, msg):
         print("[BRIDGE ERROR] Mensaje JSON corrupto.")
 
 def iniciar_bridge():
-    client = mqtt.Client()
+    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1)
     client.on_connect = on_connect
     client.on_message = on_message
     client.connect(BROKER, PORT, 60)

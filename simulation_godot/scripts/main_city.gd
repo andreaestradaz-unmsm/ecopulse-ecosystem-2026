@@ -57,7 +57,7 @@ func _on_request_completed(_result: int, response_code: int, _headers: PackedStr
 				# 1. Mantenemos el control de la atmósfera 3D general (usando pm25 general o de una estación base)
 				var pm25_general = json.get("pm25", 0.1)
 				if world_environment and world_environment.environment:
-					world_environment.environment.volumetric_fog_density = pm25_general
+					world_environment.environment.volumetric_fog_density = pm25_general / 1000.0
 					world_environment.environment.volumetric_fog_albedo = Color(0.3, 0.3, 0.3) if pm25_general > 0.1 else Color(1, 1, 1)
 				
 				# 2. PROCESAMOS LAS 6 ESTACIONES DIRECTO AL MAPA 2D

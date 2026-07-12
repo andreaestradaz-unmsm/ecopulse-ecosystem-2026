@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'services.dart';
@@ -14,15 +15,25 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<String, dynamic>? _ambientData;
   bool _isLoading = false;
   String _statusMessage = "Cargando datos...";
+  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
     _fetchData();
+    _timer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (mounted) _fetchData(showLoading: false);
+    });
   }
 
-  Future<void> _fetchData() async {
-    setState(() { _isLoading = true; });
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _fetchData({bool showLoading = true}) async {
+    if (showLoading) setState(() { _isLoading = true; });
     try {
       final url = Uri.parse("${ApiConfig.baseUrl}/app/datos_ambientales");
       if (ApiConfig.token == null) {
@@ -248,16 +259,26 @@ class _ManagementScreenState extends State<ManagementScreen> {
   List<Station> _stations = [];
   Map<int, double> _latestPm25 = {};
   bool _isLoading = false;
+  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
     _loadStations();
+    _timer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (mounted) _loadStations(showLoading: false);
+    });
   }
 
-  Future<void> _loadStations() async {
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadStations({bool showLoading = true}) async {
     if (ApiConfig.token == null) return;
-    setState(() { _isLoading = true; });
+    if (showLoading) setState(() { _isLoading = true; });
     try {
       final stations = await ApiService.getStations();
       final emissions = await ApiService.getEmissions();

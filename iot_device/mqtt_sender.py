@@ -56,13 +56,13 @@ def consultar_estaciones_backend():
 
 def generar_telemetria(station_id):
     desfase = station_id * 5.0
-    t = (time.time() / 20.0) + desfase
+    t = (time.time() / 5.0) + desfase
     
-    pm25_actual = max(5.0, 100.0 + math.sin(t) * 80.0 + random.uniform(-2.0, 2.0))
-    co2_actual = max(400.0, 500.0 + math.cos(t * 0.8) * 100.0 + random.uniform(-5.0, 5.0))
-    nox_actual = 50.0 + math.sin(t * 1.2) * 30.0 + random.uniform(-1.0, 1.0)
+    pm25_actual = max(2.0, 25.0 + math.sin(t) * 25.0 + random.uniform(-2.0, 2.0))
+    co2_actual = max(400.0, 450.0 + math.cos(t * 0.8) * 50.0 + random.uniform(-5.0, 5.0))
+    nox_actual = 30.0 + math.sin(t * 1.2) * 20.0 + random.uniform(-1.0, 1.0)
     
-    estado = "MALO (ALERTA PM2.5)" if pm25_actual > 35.0 else "BIEN (Saludable)"
+    estado = "MALO (ALERTA PM2.5)" if pm25_actual > 35.0 else ("MODERADO" if pm25_actual > 12.0 else "BIEN (Saludable)")
 
     payload = {
         "station_id": station_id,
@@ -74,9 +74,10 @@ def generar_telemetria(station_id):
     return payload, estado
 
 def iniciar_sensor():
-    client = mqtt.Client()
+    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1)
     print(f"Conectando al Broker de HiveMQ: {BROKER}...")
     client.connect(BROKER, PORT, 60)
+    client.loop_start()
     print("¡Sensor IoT EcoPulse Inteligente Iniciado!")
     
     print("\n🔍 Sincronizando lista inicial de estaciones con el Backend...")

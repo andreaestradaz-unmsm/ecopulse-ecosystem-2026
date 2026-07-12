@@ -36,12 +36,12 @@ func actualizar_por_backend(datos_json: Dictionary) -> void:
 	# Mapeamos los valores de las 6 estaciones desde el JSON.
 	# Si tu backend envía claves individuales (ej: "pm25_san_borja"), las leerá directamente.
 	# Si no existen, usará el pm25_global aplicando variaciones proporcionales para la simulación.
-	var val_san_borja   = datos_json.get("pm25_san_borja",   pm25_global * 400.0)
-	var val_santa_anita = datos_json.get("pm25_santa_anita", pm25_global * 550.0)
-	var val_san_juan    = datos_json.get("pm25_san_juan",    pm25_global * 650.0)
-	var val_san_martin  = datos_json.get("pm25_san_martin",  pm25_global * 500.0)
-	var val_pariachi    = datos_json.get("pm25_pariachi",    pm25_global * 600.0)
-	var val_campo_marte = datos_json.get("pm25_campo_marte", pm25_global * 350.0)
+	var val_san_borja   = datos_json.get("pm25_3", pm25_global * 0.4) # Estacion SB (ID 3)
+	var val_santa_anita = datos_json.get("pm25_4", pm25_global * 1.2) # ESA (ID 4)
+	var val_san_juan    = datos_json.get("pm25_6", pm25_global * 1.6) # ESJL (ID 6)
+	var val_san_martin  = datos_json.get("pm25_2", pm25_global * 0.9) # CDB/SMP (ID 2)
+	var val_pariachi    = datos_json.get("pm25_5", pm25_global * 1.1) # EP (ID 5)
+	var val_campo_marte = datos_json.get("pm25_1", pm25_global * 0.3) # Donofrio (ID 1)
 	
 	# Aplicamos los estados de color en base a los datos validados del backend
 	_establecer_estado_nube(nube_san_borja, val_san_borja)
@@ -57,9 +57,9 @@ func _establecer_estado_nube(nube: Sprite2D, valor_estacion: float) -> void:
 		return
 		
 	var estado: NivelContaminacion
-	if valor_estacion < 50.0:
+	if valor_estacion <= 12.0:
 		estado = NivelContaminacion.LIMPIO
-	elif valor_estacion >= 50.0 and valor_estacion < 150.0:
+	elif valor_estacion > 12.0 and valor_estacion <= 35.0:
 		estado = NivelContaminacion.INTERMEDIO
 	else:
 		estado = NivelContaminacion.ALTO

@@ -98,7 +98,7 @@ def crear_emision(emision: schemas.EmissionCreate, db: Session = Depends(get_db)
 
 @app.get("/api/emisiones", response_model=list[schemas.EmissionResponse])
 def obtener_emisiones(limite: int = 100, db: Session = Depends(get_db), current_user: str = Depends(auth.get_current_user)):
-    return db.query(models.Emission).limit(limite).all()
+    return db.query(models.Emission).order_by(models.Emission.id.desc()).limit(limite).all()
 
 @app.get("/app/datos_ambientales")
 def obtener_datos_ambientales(db: Session = Depends(get_db), current_user: str = Depends(auth.get_current_user)):
@@ -109,13 +109,21 @@ def obtener_datos_ambientales(db: Session = Depends(get_db), current_user: str =
         estacion = db.query(models.Station).filter(models.Station.id == ultima_emision.station_id).first()
         nombre_estacion = estacion.name if estacion else "Estación Desconocida"
 
-        return {
+        resultado = {
             "status": "success",
             "pm25": ultima_emision.pm25,    
             "co2": ultima_emision.co2,      
             "nox": ultima_emision.nox,      
             "station_name": nombre_estacion 
         }
+        
+        estaciones = db.query(models.Station).all()
+        for est in estaciones:
+            ult = db.query(models.Emission).filter(models.Emission.station_id == est.id).order_by(models.Emission.id.desc()).first()
+            if ult:
+                resultado[f"pm25_{est.id}"] = ult.pm25
+
+        return resultado
     return {
         "status": "no_data", 
         "pm25": 0.0, 
