@@ -1,22 +1,30 @@
+// Capa de servicios HTTP — centraliza toda la comunicación con la API REST del backend
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'models.dart';
 
+// Configuración global de conexión al servidor backend.
+// La IP y el puerto son ajustables desde la pantalla de configuración (SettingsScreen).
 class ApiConfig {
-  static String serverIp = "127.0.0.1"; 
+  static String serverIp = "127.0.0.1";  // IP del servidor donde corre FastAPI
   static String port = "8000";
-  static String? token; 
-  static String? userLogged;
+  static String? token;       // Token JWT activo; null si el usuario no ha iniciado sesión
+  static String? userLogged;  // Nombre del usuario autenticado actualmente
 
+  // Construye la URL base dinámicamente según los valores configurados
   static String get baseUrl => "http://$serverIp:$port";
 }
 
+// Servicio de API: métodos estáticos para cada operación CRUD disponible.
+// Todos los métodos inyectan automáticamente el header de autorización si hay sesión activa.
 class ApiService {
+  // Construye los headers comunes para cada petición (Content-Type + Authorization)
   static Map<String, String> get _headers => {
         'Content-Type': 'application/json',
         if (ApiConfig.token != null) 'Authorization': 'Bearer ${ApiConfig.token}',
       };
 
+  // Obtiene la lista completa de estaciones registradas en el sistema
   static Future<List<Station>> getStations() async {
     final response = await http.get(Uri.parse('${ApiConfig.baseUrl}/api/estaciones'), headers: _headers);
     if (response.statusCode == 200) {
@@ -27,6 +35,7 @@ class ApiService {
     }
   }
 
+  // Crea una nueva estación con el nombre y zona proporcionados
   static Future<Station> createStation(String name, String zone) async {
     final response = await http.post(
       Uri.parse('${ApiConfig.baseUrl}/api/estaciones'),
@@ -40,6 +49,7 @@ class ApiService {
     }
   }
 
+  // Elimina una estación por su ID (el backend también elimina sus emisiones)
   static Future<void> deleteStation(int id) async {
     final response = await http.delete(Uri.parse('${ApiConfig.baseUrl}/api/estaciones/$id'), headers: _headers);
     if (response.statusCode != 200) {
@@ -47,6 +57,7 @@ class ApiService {
     }
   }
 
+  // Obtiene el historial de emisiones (últimas 100 lecturas por defecto)
   static Future<List<Emission>> getEmissions() async {
     final response = await http.get(Uri.parse('${ApiConfig.baseUrl}/api/emisiones'), headers: _headers);
     if (response.statusCode == 200) {
@@ -57,6 +68,7 @@ class ApiService {
     }
   }
 
+  // Registra manualmente una nueva lectura de emisión para una estación específica
   static Future<Emission> createEmission(int stationId, double pm25, double co2, double nox) async {
     final response = await http.post(
       Uri.parse('${ApiConfig.baseUrl}/api/emisiones'),

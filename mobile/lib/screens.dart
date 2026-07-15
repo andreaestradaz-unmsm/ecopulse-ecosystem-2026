@@ -1,3 +1,4 @@
+// Pantallas de la aplicación móvil EcoPulse — cada clase es una vista completa
 import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -5,6 +6,9 @@ import 'package:http/http.dart' as http;
 import 'services.dart';
 import 'models.dart';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// HomeScreen — Pestaña "Monitoreo": muestra los datos ambientales en tiempo real
+// ─────────────────────────────────────────────────────────────────────────────
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
   @override
@@ -12,7 +16,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  Map<String, dynamic>? _ambientData;
+  Map<String, dynamic>? _ambientData;  // Último JSON recibido del backend
   bool _isLoading = false;
   String _statusMessage = "Cargando datos...";
   Timer? _timer;
@@ -21,6 +25,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _fetchData();
+    // Refresca los datos automáticamente cada 5 segundos
     _timer = Timer.periodic(const Duration(seconds: 5), (timer) {
       if (mounted) _fetchData(showLoading: false);
     });
@@ -28,14 +33,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    // Cancela el timer al salir de la pantalla para evitar memory leaks
     _timer?.cancel();
     super.dispose();
   }
 
+  // Consulta el endpoint /app/datos_ambientales y actualiza el estado con los nuevos valores
   Future<void> _fetchData({bool showLoading = true}) async {
     if (showLoading) setState(() { _isLoading = true; });
     try {
       final url = Uri.parse("${ApiConfig.baseUrl}/app/datos_ambientales");
+      // Verifica que haya sesión activa antes de hacer la petición
       if (ApiConfig.token == null) {
         setState(() {
           _statusMessage = "Debes iniciar sesión primero";
@@ -73,6 +81,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // Devuelve el color del indicador según el nivel de PM2.5 (OMS: verde/naranja/rojo)
   Color _getSeverityColor(double pm25) {
     if (pm25 <= 12) return Colors.green;
     if (pm25 <= 35) return Colors.orange;
@@ -92,12 +101,14 @@ class _HomeScreenState extends State<HomeScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16.0),
           children: [
+            // Indicador de estado de la conexión con el backend
             Text(
               "Estado: $_statusMessage",
               style: TextStyle(color: _statusMessage == "Conectado al Backend" ? Colors.green : Colors.red, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
+            // Tarjeta principal con el valor de PM2.5 de la estación más reciente
             Card(
               elevation: 4,
               color: _ambientData == null ? Colors.grey[200] : _getSeverityColor(pm25).withOpacity(0.1),
@@ -105,8 +116,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.all(20.0),
                 child: Column(
                   children: [
-                    Text("ESTACIÓN: $station", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    // Nombre de la estación activa
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12.0),
+                      child: Text(
+                        "ESTACIÓN: $station",
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                     const SizedBox(height: 10),
+                    // Muestra un spinner mientras carga o el valor grande de PM2.5
                     if (_isLoading)
                       const CircularProgressIndicator()
                     else ...[
@@ -121,12 +143,14 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 16),
+            // Fila de CO2
             ListTile(
               leading: const Icon(Icons.co2, color: Colors.blue, size: 40),
               title: const Text("Dióxido de Carbono (CO2)"),
               trailing: Text("${co2.toStringAsFixed(1)} ppm", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ),
             const Divider(),
+            // Fila de NOx
             ListTile(
               leading: const Icon(Icons.science, color: Colors.purple, size: 40),
               title: const Text("Óxidos de Nitrógeno (NOx)"),
@@ -135,6 +159,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
+      // Botón para forzar una actualización manual
       floatingActionButton: FloatingActionButton(
         onPressed: _fetchData,
         backgroundColor: Colors.green,
@@ -144,6 +169,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// SettingsScreen — Pestaña "Config": configuración de IP y autenticación de usuario
+// ─────────────────────────────────────────────────────────────────────────────
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
   @override
@@ -155,8 +183,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _userController = TextEditingController();
   final _passwordController = TextEditingController();
   String _authMessage = "";
-  bool _isRegister = false;
+  bool _isRegister = false;  // true = modo registro, false = modo login
 
+  // Envía la petición de login o registro según el modo activo
   Future<void> _submitAuth() async {
     final username = _userController.text.trim();
     final password = _passwordController.text.trim();
@@ -166,6 +195,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
     try {
       if (_isRegister) {
+        // Modo registro: crea un nuevo usuario en el backend
         final response = await http.post(
           Uri.parse("${ApiConfig.baseUrl}/api/usuarios/registro"),
           headers: {'Content-Type': 'application/json'},
@@ -178,6 +208,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           setState(() { _authMessage = "Error: ${err['detail'] ?? 'No se pudo registrar'}"; });
         }
       } else {
+        // Modo login: obtiene el JWT y lo guarda en ApiConfig para uso global
         final response = await http.post(
           Uri.parse("${ApiConfig.baseUrl}/api/usuarios/login"),
           body: {'username': username, 'password': password},
@@ -206,23 +237,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
         padding: const EdgeInsets.all(20.0),
         child: Column(
           children: [
+            // Campo para cambiar la IP del servidor backend en tiempo de ejecución
             TextField(
               controller: _ipController,
               decoration: const InputDecoration(labelText: "IP de tu PC (Backend)", border: OutlineInputBorder()),
               onChanged: (val) { ApiConfig.serverIp = val.trim(); },
             ),
             const SizedBox(height: 20),
+            // Si hay sesión activa, muestra el nombre y opción de cerrar sesión
             if (logged) ...[
               const Icon(Icons.check_circle, color: Colors.green, size: 60),
               const SizedBox(height: 10),
               Text("Sesión iniciada como: ${ApiConfig.userLogged}", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 20),
               ElevatedButton(
+                // Cierra la sesión limpiando el token y el usuario del ApiConfig
                 onPressed: () { setState(() { ApiConfig.token = null; ApiConfig.userLogged = null; _authMessage = "Sesión cerrada"; }); },
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
                 child: const Text("Cerrar Sesión", style: TextStyle(color: Colors.white)),
               )
             ] else ...[
+              // Formulario de login o registro según el modo seleccionado
               Text(_isRegister ? "Registrar Usuario" : "Iniciar Sesión", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
               TextField(controller: _userController, decoration: const InputDecoration(labelText: "Usuario", border: OutlineInputBorder())),
@@ -232,13 +267,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               if (_authMessage.isNotEmpty) Text(_authMessage, style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
               ElevatedButton(onPressed: _submitAuth, style: ElevatedButton.styleFrom(backgroundColor: Colors.green), child: Text(_isRegister ? "Registrarse" : "Entrar", style: const TextStyle(color: Colors.white))),
+              // Alterna entre modo login y modo registro
               TextButton(
-                onPressed: () { 
-                  setState(() { 
-                    _isRegister = !_isRegister; 
-                    _authMessage = ""; 
-                  }); 
-                }, 
+                onPressed: () {
+                  setState(() {
+                    _isRegister = !_isRegister;
+                    _authMessage = "";
+                  });
+                },
                 child: Text(_isRegister ? "¿Ya tienes cuenta? Inicia sesión" : "¿No tienes cuenta? Regístrate"),
               )
             ]
@@ -249,6 +285,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// ManagementScreen — Pestaña "Gestión": lista y administra las estaciones
+// ─────────────────────────────────────────────────────────────────────────────
 class ManagementScreen extends StatefulWidget {
   const ManagementScreen({super.key});
   @override
@@ -257,7 +296,7 @@ class ManagementScreen extends StatefulWidget {
 
 class _ManagementScreenState extends State<ManagementScreen> {
   List<Station> _stations = [];
-  Map<int, double> _latestPm25 = {};
+  Map<int, double> _latestPm25 = {};  // Mapa de station_id → último PM2.5 conocido
   bool _isLoading = false;
   Timer? _timer;
 
@@ -265,6 +304,7 @@ class _ManagementScreenState extends State<ManagementScreen> {
   void initState() {
     super.initState();
     _loadStations();
+    // Actualiza la lista de estaciones y sus valores cada 5 segundos
     _timer = Timer.periodic(const Duration(seconds: 5), (timer) {
       if (mounted) _loadStations(showLoading: false);
     });
@@ -276,25 +316,27 @@ class _ManagementScreenState extends State<ManagementScreen> {
     super.dispose();
   }
 
+  // Carga las estaciones y construye el mapa de último PM2.5 por estación
   Future<void> _loadStations({bool showLoading = true}) async {
     if (ApiConfig.token == null) return;
     if (showLoading) setState(() { _isLoading = true; });
     try {
       final stations = await ApiService.getStations();
       final emissions = await ApiService.getEmissions();
-      
+
+      // Obtiene la emisión más reciente por estación para mostrar su PM2.5 actual
       Map<int, Emission> latestEms = {};
       for (var e in emissions) {
         if (!latestEms.containsKey(e.stationId) || e.id > latestEms[e.stationId]!.id) {
           latestEms[e.stationId] = e;
         }
       }
-      
+
       Map<int, double> latestPm25 = {};
       latestEms.forEach((k, v) => latestPm25[k] = v.pm25);
 
-      setState(() { 
-        _stations = stations; 
+      setState(() {
+        _stations = stations;
         _latestPm25 = latestPm25;
       });
     } catch (e) {
@@ -306,6 +348,7 @@ class _ManagementScreenState extends State<ManagementScreen> {
     }
   }
 
+  // Muestra un diálogo para ingresar nombre y zona de la nueva estación
   Future<void> _addStation() async {
     final nameCtrl = TextEditingController();
     final zoneCtrl = TextEditingController();
@@ -316,8 +359,17 @@ class _ManagementScreenState extends State<ManagementScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: "Nombre")),
-            TextField(controller: zoneCtrl, decoration: const InputDecoration(labelText: "Zona")),
+            TextField(
+              controller: nameCtrl,
+              maxLength: 100,
+              decoration: const InputDecoration(labelText: "Nombre de Estación", border: OutlineInputBorder()),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: zoneCtrl,
+              maxLength: 100,
+              decoration: const InputDecoration(labelText: "Zona/Ubicación", border: OutlineInputBorder()),
+            ),
           ],
         ),
         actions: [
@@ -341,6 +393,7 @@ class _ManagementScreenState extends State<ManagementScreen> {
     );
   }
 
+  // Elimina la estación y recarga la lista actualizada
   Future<void> _deleteStation(int id) async {
     try {
       await ApiService.deleteStation(id);
@@ -352,6 +405,7 @@ class _ManagementScreenState extends State<ManagementScreen> {
     }
   }
 
+  // Retorna color según el nivel de contaminación para colorear las tarjetas de estaciones
   Color _getSeverityColor(double? pm25) {
     if (pm25 == null) return Colors.grey;
     if (pm25 <= 12) return Colors.green;
@@ -361,6 +415,7 @@ class _ManagementScreenState extends State<ManagementScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Si no hay sesión, pide que el usuario inicie sesión primero
     if (ApiConfig.token == null) {
       return const Center(child: Text("Debes iniciar sesión para gestionar estaciones"));
     }
@@ -376,6 +431,7 @@ class _ManagementScreenState extends State<ManagementScreen> {
                   final pm25 = _latestPm25[station.id];
                   return Card(
                     margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    // El fondo de la tarjeta refleja la calidad del aire de esa estación
                     color: _getSeverityColor(pm25).withOpacity(0.2),
                     child: ListTile(
                       title: Text(station.name, style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -384,6 +440,7 @@ class _ManagementScreenState extends State<ManagementScreen> {
                         icon: const Icon(Icons.delete, color: Colors.red),
                         onPressed: () => _deleteStation(station.id),
                       ),
+                      // Al tocar la tarjeta, navega al detalle de emisiones de esa estación
                       onTap: () {
                         Navigator.push(
                           context,
@@ -395,6 +452,7 @@ class _ManagementScreenState extends State<ManagementScreen> {
                 },
               ),
             ),
+      // Botón para agregar una nueva estación al sistema
       floatingActionButton: FloatingActionButton(
         onPressed: _addStation,
         backgroundColor: Colors.green,
@@ -404,6 +462,9 @@ class _ManagementScreenState extends State<ManagementScreen> {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// StationDetailsScreen — Subpantalla: historial de emisiones de una estación
+// ─────────────────────────────────────────────────────────────────────────────
 class StationDetailsScreen extends StatefulWidget {
   final Station station;
   const StationDetailsScreen({super.key, required this.station});
@@ -413,7 +474,7 @@ class StationDetailsScreen extends StatefulWidget {
 }
 
 class _StationDetailsScreenState extends State<StationDetailsScreen> {
-  List<Emission> _emissions = [];
+  List<Emission> _emissions = [];  // Lista de lecturas filtradas por esta estación
   bool _isLoading = false;
 
   @override
@@ -422,6 +483,7 @@ class _StationDetailsScreenState extends State<StationDetailsScreen> {
     _loadEmissions();
   }
 
+  // Carga todas las emisiones y filtra sólo las que pertenecen a esta estación
   Future<void> _loadEmissions() async {
     setState(() { _isLoading = true; });
     try {
@@ -438,6 +500,7 @@ class _StationDetailsScreenState extends State<StationDetailsScreen> {
     }
   }
 
+  // Muestra un diálogo para registrar una lectura manual de PM2.5, CO2 y NOx
   Future<void> _addEmission() async {
     final pm25Ctrl = TextEditingController();
     final co2Ctrl = TextEditingController();
@@ -492,11 +555,11 @@ class _StationDetailsScreenState extends State<StationDetailsScreen> {
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: _loadEmissions,
+              // Lista de todas las lecturas registradas para esta estación
               child: ListView.builder(
                 itemCount: _emissions.length,
                 itemBuilder: (context, index) {
                   final e = _emissions[index];
-                  // format date string if possible, or just show it
                   return Card(
                     margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     child: ListTile(
@@ -507,6 +570,7 @@ class _StationDetailsScreenState extends State<StationDetailsScreen> {
                 },
               ),
             ),
+      // Botón para registrar una lectura de emisión de forma manual
       floatingActionButton: FloatingActionButton(
         onPressed: _addEmission,
         backgroundColor: Colors.green,

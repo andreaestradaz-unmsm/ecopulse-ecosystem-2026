@@ -1,57 +1,44 @@
-
+# Script de inicialización de la base de datos — se ejecuta una sola vez para preparar el entorno
 import datetime
 from sqlalchemy.orm import Session
 from app.database import SessionLocal, engine, Base
 from app import models, auth
 
+
+# Función principal de seed: crea tablas y datos mínimos para que el sistema funcione
 def seed_database():
     print("[MOCK-SEED] Creando tablas de prueba en la base de datos...")
+    # Genera todas las tablas definidas en los modelos ORM si todavía no existen
     Base.metadata.create_all(bind=engine)
 
     db: Session = SessionLocal()
     try:
+        # Verifica si el usuario 'admin' ya existe para no duplicarlo
         admin_user = db.query(models.User).filter(models.User.username == "admin").first()
         if not admin_user:
             print("[MOCK-SEED] Creando usuario admin...")
+            # Hashea la contraseña antes de guardarla en la BD
             hashed_pw = auth.obtener_password_hash("admin")
             nuevo_admin = models.User(username="admin", hashed_password=hashed_pw)
             db.add(nuevo_admin)
             db.commit()
-
-        estacion_existente = db.query(models.Station).filter(models.Station.name == "Estación Central").first()
-
-        if not estacion_existente:
-            print("[MOCK-SEED] Insertando estación de monitoreo simulada...")
-            estacion_central = models.Station(
-                name="Estación Central",
-                zone="Parque Industrial de Lima"
-            )
-            db.add(estacion_central)
-            db.commit()
-            db.refresh(estacion_central)
-            print(f"[MOCK-SEED] Estación temporal creada con ID: {estacion_central.id}")
-            station_id = estacion_central.id
+            print("[MOCK-SEED] Usuario admin creado exitosamente!")
         else:
-            print("[MOCK-SEED] La estación de prueba 'Estación Central' ya existe.")
-            station_id = estacion_existente.id
+            print("[MOCK-SEED] Usuario admin ya existe.")
 
-        print("[MOCK-SEED] Generando lectura inicial simulada de PM2.5, CO2 y NOx...")
-        nueva_emision = models.Emission(
-            station_id=station_id,
-            pm25=28.4,
-            co2=385.2,
-            nox=42.1,
-            timestamp=datetime.datetime.utcnow()
-        )
-        db.add(nueva_emision)
-        db.commit()
-        print("[MOCK-SEED] ¡Datos de prueba iniciales cargados exitosamente!")
+        # Las estaciones NO se crean aquí: deben registrarse desde la app Flutter
+        # para que los sensores IoT las detecten y comiencen a enviar datos automáticamente
+        print("[MOCK-SEED] Las estaciones se crearán dinámicamente desde Flutter.")
+        print("[MOCK-SEED] Solo crea estaciones en la app móvil y los sensores se sincronizarán automáticamente.")
 
     except Exception as e:
-        print(f"[MOCK-SEED] [ERROR] No se pudieron cargar los datos de prueba: {e}")
+        print(f"[MOCK-SEED] [ERROR] Error al inicializar la BD: {e}")
         db.rollback()
     finally:
+        # Siempre cierra la sesión al terminar, con o sin error
         db.close()
 
+
+# Permite ejecutar el seed directamente: python -m app.seed
 if __name__ == "__main__":
     seed_database()

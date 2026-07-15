@@ -1,6 +1,7 @@
+# Visualización 2D satelital de Lima — gestiona los sprites de nube sobre el mapa
 extends Node2D
 
-# Referencias exactas a tus 6 nubes (las declaramos sin asignar valor al inicio)
+# Referencias a los sprites de nube de cada estación de monitoreo
 var nube_san_borja: Sprite2D
 var nube_santa_anita: Sprite2D
 var nube_san_juan: Sprite2D
@@ -8,54 +9,89 @@ var nube_san_martin: Sprite2D
 var nube_pariachi: Sprite2D
 var nube_campo_marte: Sprite2D
 
-# Esta es la función que se ejecuta cuando el nodo ya está listo
+
+# Inicializa las referencias a cada nube una vez que el nodo está listo en la escena
 func _ready() -> void:
-	# Ahora sí, jalamos los nodos con total seguridad
 	nube_san_borja = $NubeSanBorja
 	nube_santa_anita = $NubeSantaAnita
 	nube_san_juan = $NubeSanJuandeLurigancho
 	nube_san_martin = $NubeSanMartin
 	nube_pariachi = $NubePariachi
 	nube_campo_marte = $NubeCampoDeMarte
-	
+
 	print("Nubes de la visualización satelital enlazadas correctamente.")
 
-# Rangos de niveles de contaminación
+
+# Enum para representar los tres niveles posibles de contaminación
 enum NivelContaminacion { LIMPIO, INTERMEDIO, ALTO }
 
-# Colores de nubes con opacidad para la ejemplificación en el mapa de Lima
-const COLOR_VERDE_NUBE = Color(0.0, 1.0, 0.2, 0.4)    # Contaminación baja
-const COLOR_NARANJA_NUBE = Color(1.0, 0.6, 0.0, 0.65)  # Contaminación moderada
-const COLOR_ROJO_NUBE = Color(0.9, 0.0, 0.0, 0.75)     # Contaminación crítica
+# Colores con opacidad para pintar las nubes según el nivel de contaminación
+const COLOR_VERDE_NUBE = Color(0.0, 1.0, 0.2, 0.4)    # PM2.5 ≤ 12 µg/m³ — saludable
+const COLOR_NARANJA_NUBE = Color(1.0, 0.6, 0.0, 0.65)  # PM2.5 12-35 µg/m³ — moderado
+const COLOR_ROJO_NUBE = Color(0.9, 0.0, 0.0, 0.75)     # PM2.5 > 35 µg/m³ — crítico
 
-# Procesa el diccionario JSON crudo directo del Backend
+
+# Recibe el JSON del backend y colorea cada nube según el PM2.5 de su estación
 func actualizar_por_backend(datos_json: Dictionary) -> void:
-	# Intentamos jalar el valor global de pm25 enviado del backend por defecto
-	var pm25_global = datos_json.get("pm25", 0.0)
-	
-	# Mapeamos los valores de las 6 estaciones desde el JSON.
-	# Si tu backend envía claves individuales (ej: "pm25_san_borja"), las leerá directamente.
-	# Si no existen, usará el pm25_global aplicando variaciones proporcionales para la simulación.
-	var val_san_borja   = datos_json.get("pm25_3", pm25_global * 0.4) # Estacion SB (ID 3)
-	var val_santa_anita = datos_json.get("pm25_4", pm25_global * 1.2) # ESA (ID 4)
-	var val_san_juan    = datos_json.get("pm25_6", pm25_global * 1.6) # ESJL (ID 6)
-	var val_san_martin  = datos_json.get("pm25_2", pm25_global * 0.9) # CDB/SMP (ID 2)
-	var val_pariachi    = datos_json.get("pm25_5", pm25_global * 1.1) # EP (ID 5)
-	var val_campo_marte = datos_json.get("pm25_1", pm25_global * 0.3) # Donofrio (ID 1)
-	
-	# Aplicamos los estados de color en base a los datos validados del backend
-	_establecer_estado_nube(nube_san_borja, val_san_borja)
-	_establecer_estado_nube(nube_santa_anita, val_santa_anita)
-	_establecer_estado_nube(nube_san_juan, val_san_juan)
-	_establecer_estado_nube(nube_san_martin, val_san_martin)
-	_establecer_estado_nube(nube_pariachi, val_pariachi)
-	_establecer_estado_nube(nube_campo_marte, val_campo_marte)
+	# Primero resetea todas las nubes a blanco (estado "sin datos")
+	_resetear_todas_nubes()
 
-# Evalúa los límites ppm/ugm3 y pinta la nube correspondiente
+	if datos_json.has("estaciones"):
+		var estaciones_dict = datos_json.get("estaciones", {})
+
+		# Itera cada estación del JSON y colorea su nube correspondiente
+		for station_id_str in estaciones_dict.keys():
+			var station_id = int(station_id_str)
+			var datos_estacion = estaciones_dict[station_id_str]
+			var pm25_value = datos_estacion.get("pm25", 0.0)
+			var nombre_estacion = datos_estacion.get("nombre", "Desconocida")
+
+			# Mapea el ID de la estación al sprite de nube correcto en el mapa
+			match station_id:
+				1:  # San Juan de Lurigancho
+					_establecer_estado_nube(nube_san_juan, pm25_value)
+					print("📍 Estación %d (%s): PM2.5 = %.2f" % [station_id, nombre_estacion, pm25_value])
+				2:  # San Martin de Porres
+					_establecer_estado_nube(nube_san_martin, pm25_value)
+					print("📍 Estación %d (%s): PM2.5 = %.2f" % [station_id, nombre_estacion, pm25_value])
+				3:  # Santa Anita
+					_establecer_estado_nube(nube_santa_anita, pm25_value)
+					print("📍 Estación %d (%s): PM2.5 = %.2f" % [station_id, nombre_estacion, pm25_value])
+				4:  # Pariachi
+					_establecer_estado_nube(nube_pariachi, pm25_value)
+					print("📍 Estación %d (%s): PM2.5 = %.2f" % [station_id, nombre_estacion, pm25_value])
+				5:  # Campo de Marte
+					_establecer_estado_nube(nube_campo_marte, pm25_value)
+					print("📍 Estación %d (%s): PM2.5 = %.2f" % [station_id, nombre_estacion, pm25_value])
+				6:  # San Borja
+					_establecer_estado_nube(nube_san_borja, pm25_value)
+					print("📍 Estación %d (%s): PM2.5 = %.2f" % [station_id, nombre_estacion, pm25_value])
+	else:
+		print("⚠️  No hay estaciones registradas aún. Crea una estación desde Flutter.")
+
+
+# Pone todas las nubes en blanco semitransparente para indicar que no hay datos aún
+func _resetear_todas_nubes() -> void:
+	if nube_san_juan:
+		nube_san_juan.modulate = Color(1, 1, 1, 0.3)
+	if nube_san_martin:
+		nube_san_martin.modulate = Color(1, 1, 1, 0.3)
+	if nube_santa_anita:
+		nube_santa_anita.modulate = Color(1, 1, 1, 0.3)
+	if nube_pariachi:
+		nube_pariachi.modulate = Color(1, 1, 1, 0.3)
+	if nube_campo_marte:
+		nube_campo_marte.modulate = Color(1, 1, 1, 0.3)
+	if nube_san_borja:
+		nube_san_borja.modulate = Color(1, 1, 1, 0.3)
+
+
+# Evalúa el valor de PM2.5 y aplica el color correspondiente al sprite de nube
 func _establecer_estado_nube(nube: Sprite2D, valor_estacion: float) -> void:
 	if not is_node_ready() or not nube:
 		return
-		
+
+	# Clasifica el nivel según los umbrales de la OMS para PM2.5
 	var estado: NivelContaminacion
 	if valor_estacion <= 12.0:
 		estado = NivelContaminacion.LIMPIO
@@ -63,7 +99,8 @@ func _establecer_estado_nube(nube: Sprite2D, valor_estacion: float) -> void:
 		estado = NivelContaminacion.INTERMEDIO
 	else:
 		estado = NivelContaminacion.ALTO
-		
+
+	# Aplica el color correspondiente al nivel de contaminación detectado
 	match estado:
 		NivelContaminacion.LIMPIO:
 			nube.modulate = COLOR_VERDE_NUBE
